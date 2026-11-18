@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Global admin identity entry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID of the admin." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp." }
+      },
+      "required": ["uid", "createdAt"]
+    },
+    "OwnerConfig": {
+      "title": "OwnerConfig",
+      "description": "Owner console credentials and Obtainium/GitHub release settings scoped to the authenticated workspace owner.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "username": { "type": "string" },
+        "usernameLower": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "salt": { "type": "string" },
+        "githubRepo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "username", "usernameLower", "passwordHash", "salt", "createdAt", "updatedAt"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Public messaging profile identified by unique nickname (no PII).",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "nickname": { "type": "string" },
+        "nicknameLower": { "type": "string" },
+        "role": { "type": "string", "enum": ["USER"] },
+        "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED"] },
+        "online": { "type": "boolean" },
+        "bio": { "type": "string" },
+        "lastSeenAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "nickname", "nicknameLower", "role", "status", "online", "createdAt", "updatedAt"]
+    },
+    "AccountCredential": {
+      "title": "AccountCredential",
+      "description": "Isolated password hash and salt for nickname/password sign-in.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "salt": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "passwordHash", "salt", "createdAt", "updatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct 1-to-1 conversation between two nicknames.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "participantNicknames": { "type": "array" },
+        "participantUids": { "type": "array" },
+        "lastMessagePreview": { "type": "string" },
+        "lastMessageType": { "type": "string", "enum": ["TEXT", "VOICE", "FILE", "CALL_LOG"] },
+        "lastSenderNickname": { "type": "string" },
+        "messageCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "ownerUid",
+        "participantNicknames",
+        "participantUids",
+        "lastMessagePreview",
+        "lastMessageType",
+        "lastSenderNickname",
+        "messageCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Text, voice note, file attachment, or call log message inside a conversation.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "participantUids": { "type": "array" },
+        "senderNickname": { "type": "string" },
+        "recipientNickname": { "type": "string" },
+        "type": { "type": "string", "enum": ["TEXT", "VOICE", "FILE", "CALL_LOG"] },
+        "textContent": { "type": "string" },
+        "voiceDurationMs": { "type": "integer" },
+        "voiceBase64": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileMimeType": { "type": "string" },
+        "fileSizeBytes": { "type": "integer" },
+        "fileBase64": { "type": "string" },
+        "callDurationSec": { "type": "integer" },
+        "callStatus": { "type": "string", "enum": ["ACTIVE", "ENDED", "MISSED", "DECLINED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "participantUids", "senderNickname", "recipientNickname", "type", "createdAt", "updatedAt"]
+    },
+    "CallSession": {
+      "title": "CallSession",
+      "description": "Real-time audio/video call signaling document.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "participantUids": { "type": "array" },
+        "callerNickname": { "type": "string" },
+        "recipientNickname": { "type": "string" },
+        "callType": { "type": "string", "enum": ["AUDIO", "VIDEO"] },
+        "status": { "type": "string", "enum": ["RINGING", "ACTIVE", "ENDED", "MISSED", "DECLINED"] },
+        "durationSec": { "type": "integer" },
+        "endedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "participantUids", "callerNickname", "recipientNickname", "callType", "status", "durationSec", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Global admin UID registry."
+    },
+    "/owner_configs/{uid}": {
+      "schema": { "$ref": "#/entities/OwnerConfig" },
+      "description": "Workspace owner login credentials and GitHub/Obtainium settings."
+    },
+    "/accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/Account" },
+      "description": "Registered messaging user profiles keyed by lowercase nickname."
+    },
+    "/accounts/{accountId}/credentials/{credId}": {
+      "schema": { "$ref": "#/entities/AccountCredential" },
+      "description": "Isolated password hash and salt for user login."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Direct messaging conversations between nicknames."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Individual messages (text, voice, file, call log) within a conversation."
+    },
+    "/calls/{callId}": {
+      "schema": { "$ref": "#/entities/CallSession" },
+      "description": "Live call signaling records."
+    }
+  }
+}

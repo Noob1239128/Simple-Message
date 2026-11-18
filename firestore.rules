@@ -1,0 +1,276 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        ('email' in request.auth.token && request.auth.token.email == 'janowitzleon@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    // --- Validation Helpers ---
+    function isValidAdmin(data) {
+      return data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidOwnerConfig(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.username is string && data.username.size() >= 3 && data.username.size() <= 24 &&
+             data.usernameLower is string && data.usernameLower.size() >= 3 && data.usernameLower.size() <= 24 &&
+             data.usernameLower.matches('^[a-z0-9_\\-]+$') &&
+             data.passwordHash is string && data.passwordHash.size() >= 32 && data.passwordHash.size() <= 128 &&
+             data.salt is string && data.salt.size() >= 8 && data.salt.size() <= 64 &&
+             (!('githubRepo' in data) || (data.githubRepo is string && data.githubRepo.size() <= 120)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAccount(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.nickname is string && data.nickname.size() >= 3 && data.nickname.size() <= 24 &&
+             data.nicknameLower is string && data.nicknameLower.size() >= 3 && data.nicknameLower.size() <= 24 &&
+             data.nicknameLower.matches('^[a-z0-9_\\-]+$') &&
+             data.role in ['USER'] &&
+             data.status in ['ACTIVE', 'SUSPENDED'] &&
+             data.online is bool &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 160)) &&
+             (!('lastSeenAt' in data) || isValidTimestamp(data.lastSeenAt)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCredential(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.passwordHash is string && data.passwordHash.size() >= 32 && data.passwordHash.size() <= 128 &&
+             data.salt is string && data.salt.size() >= 8 && data.salt.size() <= 64 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidConversation(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.participantNicknames is list && data.participantNicknames.size() == 2 &&
+             data.participantNicknames[0] is string && data.participantNicknames[0].size() >= 3 && data.participantNicknames[0].size() <= 24 &&
+             data.participantNicknames[1] is string && data.participantNicknames[1].size() >= 3 && data.participantNicknames[1].size() <= 24 &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 2 &&
+             data.participantUids[0] is string && data.participantUids[0].size() >= 1 && data.participantUids[0].size() <= 128 &&
+             data.lastMessagePreview is string && data.lastMessagePreview.size() <= 200 &&
+             data.lastMessageType in ['TEXT', 'VOICE', 'FILE', 'CALL_LOG'] &&
+             data.lastSenderNickname is string && data.lastSenderNickname.size() <= 24 &&
+             data.messageCount is int && data.messageCount >= 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidMessage(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 2 &&
+             data.participantUids[0] is string && data.participantUids[0].size() >= 1 && data.participantUids[0].size() <= 128 &&
+             data.senderNickname is string && data.senderNickname.size() >= 3 && data.senderNickname.size() <= 24 &&
+             data.recipientNickname is string && data.recipientNickname.size() >= 3 && data.recipientNickname.size() <= 24 &&
+             data.type in ['TEXT', 'VOICE', 'FILE', 'CALL_LOG'] &&
+             (!('textContent' in data) || (data.textContent is string && data.textContent.size() <= 2000)) &&
+             (!('voiceDurationMs' in data) || (data.voiceDurationMs is int && data.voiceDurationMs >= 0 && data.voiceDurationMs <= 600000)) &&
+             (!('voiceBase64' in data) || (data.voiceBase64 is string && data.voiceBase64.size() <= 450000)) &&
+             (!('fileName' in data) || (data.fileName is string && data.fileName.size() <= 150)) &&
+             (!('fileMimeType' in data) || (data.fileMimeType is string && data.fileMimeType.size() <= 120)) &&
+             (!('fileSizeBytes' in data) || (data.fileSizeBytes is int && data.fileSizeBytes >= 0 && data.fileSizeBytes <= 104857600)) &&
+             (!('fileBase64' in data) || (data.fileBase64 is string && data.fileBase64.size() <= 450000)) &&
+             (!('callDurationSec' in data) || (data.callDurationSec is int && data.callDurationSec >= 0 && data.callDurationSec <= 86400)) &&
+             (!('callStatus' in data) || data.callStatus in ['ACTIVE', 'ENDED', 'MISSED', 'DECLINED']) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCall(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 2 &&
+             data.participantUids[0] is string && data.participantUids[0].size() >= 1 && data.participantUids[0].size() <= 128 &&
+             data.callerNickname is string && data.callerNickname.size() >= 3 && data.callerNickname.size() <= 24 &&
+             data.recipientNickname is string && data.recipientNickname.size() >= 3 && data.recipientNickname.size() <= 24 &&
+             data.callType in ['AUDIO', 'VIDEO'] &&
+             data.status in ['RINGING', 'ACTIVE', 'ENDED', 'MISSED', 'DECLINED'] &&
+             data.durationSec is int && data.durationSec >= 0 && data.durationSec <= 86400 &&
+             (!('endedAt' in data) || isValidTimestamp(data.endedAt)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // --- Collection Rules ---
+    match /admins/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && (request.auth.uid == uid || isAdmin());
+      allow list: if false;
+      allow create, update: if isAdmin() && isValidId(uid) && isValidAdmin(incoming()) && incoming().uid == uid;
+      allow delete: if isAdmin() && isValidId(uid);
+    }
+
+    match /owner_configs/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && request.auth.uid == uid;
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isSignedIn() &&
+                       isValidId(uid) &&
+                       request.auth.uid == uid &&
+                       isValidOwnerConfig(incoming()) &&
+                       incoming().ownerUid == request.auth.uid &&
+                       incoming().keys().hasAll(['ownerUid', 'username', 'usernameLower', 'passwordHash', 'salt', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['ownerUid', 'username', 'usernameLower', 'passwordHash', 'salt', 'githubRepo', 'createdAt', 'updatedAt']);
+      allow update: if isSignedIn() &&
+                       isValidId(uid) &&
+                       request.auth.uid == uid &&
+                       isValidOwnerConfig(incoming()) &&
+                       incoming().ownerUid == existing().ownerUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['username', 'usernameLower', 'passwordHash', 'salt', 'githubRepo', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(uid) && request.auth.uid == uid;
+    }
+
+    match /accounts/{accountId} {
+      allow get: if isSignedIn() && isValidId(accountId);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
+      allow create: if isSignedIn() &&
+                       isValidId(accountId) &&
+                       isValidAccount(incoming()) &&
+                       incoming().ownerUid == request.auth.uid &&
+                       incoming().nicknameLower == accountId &&
+                       incoming().role == 'USER' &&
+                       incoming().status == 'ACTIVE' &&
+                       incoming().keys().hasAll(['ownerUid', 'nickname', 'nicknameLower', 'role', 'status', 'online', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['ownerUid', 'nickname', 'nicknameLower', 'role', 'status', 'online', 'bio', 'lastSeenAt', 'createdAt', 'updatedAt']);
+      allow update: if isSignedIn() &&
+                       isValidId(accountId) &&
+                       isValidAccount(incoming()) &&
+                       incoming().ownerUid == existing().ownerUid &&
+                       incoming().nicknameLower == existing().nicknameLower &&
+                       incoming().role == existing().role &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'status', 'online', 'lastSeenAt', 'updatedAt'])) ||
+                         (existing().ownerUid == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'status', 'online', 'lastSeenAt', 'updatedAt']))
+                       );
+      allow delete: if isSignedIn() && isValidId(accountId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+
+      match /credentials/{credId} {
+        allow get: if isSignedIn() && isValidId(accountId) && isValidId(credId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+        allow list: if false;
+        allow create: if isSignedIn() &&
+                         isValidId(accountId) &&
+                         isValidId(credId) &&
+                         credId == 'auth' &&
+                         isValidCredential(incoming()) &&
+                         incoming().ownerUid == request.auth.uid &&
+                         exists(/databases/$(database)/documents/accounts/$(accountId)) &&
+                         get(/databases/$(database)/documents/accounts/$(accountId)).data.ownerUid == request.auth.uid &&
+                         incoming().keys().hasAll(['ownerUid', 'passwordHash', 'salt', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['ownerUid', 'passwordHash', 'salt', 'createdAt', 'updatedAt']);
+        allow update: if isSignedIn() &&
+                         isValidId(accountId) &&
+                         isValidId(credId) &&
+                         credId == 'auth' &&
+                         isValidCredential(incoming()) &&
+                         existing().ownerUid == request.auth.uid &&
+                         incoming().ownerUid == existing().ownerUid &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['passwordHash', 'salt', 'updatedAt']);
+        allow delete: if isSignedIn() && isValidId(accountId) && isValidId(credId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+      }
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && isValidId(conversationId) && (isAdmin() || existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid || request.auth.uid in resource.data.participantUids);
+      allow create: if isSignedIn() &&
+                       isValidId(conversationId) &&
+                       isValidConversation(incoming()) &&
+                       (incoming().ownerUid == request.auth.uid || request.auth.uid in incoming().participantUids) &&
+                       incoming().keys().hasAll(['ownerUid', 'participantNicknames', 'participantUids', 'lastMessagePreview', 'lastMessageType', 'lastSenderNickname', 'messageCount', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['ownerUid', 'participantNicknames', 'participantUids', 'lastMessagePreview', 'lastMessageType', 'lastSenderNickname', 'messageCount', 'createdAt', 'updatedAt']);
+      allow update: if isSignedIn() &&
+                       isValidId(conversationId) &&
+                       isValidConversation(incoming()) &&
+                       (isAdmin() || existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids) &&
+                       incoming().ownerUid == existing().ownerUid &&
+                       incoming().participantNicknames == existing().participantNicknames &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['participantUids', 'lastMessagePreview', 'lastMessageType', 'lastSenderNickname', 'messageCount', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(conversationId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) && (isAdmin() || existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids);
+        allow list: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid || request.auth.uid in resource.data.participantUids);
+        allow create: if isSignedIn() &&
+                         isValidId(conversationId) &&
+                         isValidId(messageId) &&
+                         isValidMessage(incoming()) &&
+                         (incoming().ownerUid == request.auth.uid || request.auth.uid in incoming().participantUids) &&
+                         exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+                         incoming().keys().hasAll(['ownerUid', 'participantUids', 'senderNickname', 'recipientNickname', 'type', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['ownerUid', 'participantUids', 'senderNickname', 'recipientNickname', 'type', 'textContent', 'voiceDurationMs', 'voiceBase64', 'fileName', 'fileMimeType', 'fileSizeBytes', 'fileBase64', 'callDurationSec', 'callStatus', 'createdAt', 'updatedAt']);
+        allow update: if isSignedIn() &&
+                         isValidId(conversationId) &&
+                         isValidId(messageId) &&
+                         isValidMessage(incoming()) &&
+                         (isAdmin() || existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids) &&
+                         incoming().ownerUid == existing().ownerUid &&
+                         incoming().senderNickname == existing().senderNickname &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['textContent', 'updatedAt']);
+        allow delete: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+      }
+    }
+
+    match /calls/{callId} {
+      allow get: if isSignedIn() && isValidId(callId) && (isAdmin() || existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid || request.auth.uid in resource.data.participantUids);
+      allow create: if isSignedIn() &&
+                       isValidId(callId) &&
+                       isValidCall(incoming()) &&
+                       (incoming().ownerUid == request.auth.uid || request.auth.uid in incoming().participantUids) &&
+                       incoming().status == 'RINGING' &&
+                       incoming().keys().hasAll(['ownerUid', 'participantUids', 'callerNickname', 'recipientNickname', 'callType', 'status', 'durationSec', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['ownerUid', 'participantUids', 'callerNickname', 'recipientNickname', 'callType', 'status', 'durationSec', 'endedAt', 'createdAt', 'updatedAt']);
+      allow update: if isSignedIn() &&
+                       isValidId(callId) &&
+                       isValidCall(incoming()) &&
+                       (
+                         isAdmin() ||
+                         (
+                           (existing().ownerUid == request.auth.uid || request.auth.uid in existing().participantUids) &&
+                           !(existing().status in ['ENDED', 'MISSED', 'DECLINED']) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().callerNickname == existing().callerNickname &&
+                           incoming().recipientNickname == existing().recipientNickname &&
+                           incoming().createdAt == existing().createdAt &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'durationSec', 'endedAt', 'updatedAt'])
+                         )
+                       );
+      allow delete: if isSignedIn() && isValidId(callId) && (isAdmin() || existing().ownerUid == request.auth.uid);
+    }
+  }
+}

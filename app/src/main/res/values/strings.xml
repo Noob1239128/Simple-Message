@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">PulseChat</string>
+    <string name="auth_google_title">Mit Google verbinden</string>
+    <string name="auth_google_subtitle">Sichere Cloud-Synchronisation für Nachrichten, Sprachnotizen, Dateien &amp; Owner-Analysen.</string>
+    <string name="auth_google_button">Mit Google anmelden</string>
+    <string name="mode_user">Nutzer</string>
+    <string name="mode_owner">Owner</string>
+    <string name="nickname_label">Nickname / Nutzername</string>
+    <string name="password_label">Passwort</string>
+    <string name="login_button">Anmelden</string>
+    <string name="register_button">Registrieren</string>
+    <string name="new_chat_by_nickname">Neuer Chat per Nickname</string>
+    <string name="call_audio">Anrufen</string>
+    <string name="call_video">Videoanruf</string>
+    <string name="owner_analytics_tab">Analysen</string>
+    <string name="owner_conversations_tab">Chats</string>
+    <string name="owner_users_tab">Nutzer</string>
+    <string name="owner_obtainium_tab">GitHub</string>
+</resources>

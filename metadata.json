@@ -1,0 +1,6 @@
+{
+  "name": "PulseChat",
+  "description": "Messaging-App für Nutzer (Registrierung & Login mit Nickname/Passwort, Echtzeit-Chat, Sprachnachrichten, Dateien & Anrufe) und Owner-Konsole (Konversationsübersicht, Nutzerverwaltung & Nutzungsstatistiken).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
