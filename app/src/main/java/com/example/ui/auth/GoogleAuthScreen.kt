@@ -294,11 +294,11 @@ fun onGoogleSignInClicked(
     onAuthCancelled: () -> Unit = {}
 ) {
     if (com.google.firebase.FirebaseApp.getApps(context).isEmpty()) {
-        onAuthError("Firebase-Konfiguration fehlt (google-services.json). Bitte GOOGLE_SERVICES_JSON_BASE64 in den GitHub-Secrets hinterlegen.")
+        onAuthError("Firebase-Konfiguration fehlt (google-services.json). Bitte das Secret GOOGLE_SERVICES_JSON in den GitHub-Actions-Secrets hinterlegen und neu bauen.")
         return
     }
     val clientId = resolveDefaultWebClientId(context) ?: run {
-        onAuthError("Google Sign-In Konfiguration fehlt (default_web_client_id in google-services.json). Bitte GOOGLE_SERVICES_JSON_BASE64 in den GitHub-Secrets hinterlegen.")
+        onAuthError("Google Sign-In Konfiguration fehlt (default_web_client_id). Bitte das Secret GOOGLE_SERVICES_JSON in den GitHub-Actions-Secrets hinterlegen und neu bauen.")
         return
     }
     val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()

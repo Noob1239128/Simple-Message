@@ -56,14 +56,28 @@ jobs:
 
       - name: Prepare Firebase config and signing keystore
         env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          if [ -n "${GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '\r\n ' | base64 --decode > app/google-services.json
+          GS_RAW="${GOOGLE_SERVICES_JSON:-${GOOGLE_SERVICES_JSON_BASE64:-}}"
+          if [ -n "$GS_RAW" ]; then
+            if printf '%s' "$GS_RAW" | grep -q '^[[:space:]]*{'; then
+              printf '%s\n' "$GS_RAW" > app/google-services.json
+            else
+              printf '%s' "$GS_RAW" | tr -d '\r\n ' | base64 --decode > app/google-services.json
+            fi
+          fi
+          if [ -f app/google-services.json ]; then
+            echo "Firebase config (app/google-services.json) is present."
+          else
+            echo "WARNING: app/google-services.json is missing. Add GOOGLE_SERVICES_JSON secret in GitHub Settings."
           fi
           if [ ! -f debug.keystore ]; then
-            if [ -f debug.keystore.base64 ]; then
+            if [ -n "${DEBUG_KEYSTORE_BASE64:-}" ]; then
+              printf '%s' "$DEBUG_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 --decode > debug.keystore
+            elif [ -f debug.keystore.base64 ]; then
               tr -d '\r\n ' < debug.keystore.base64 | base64 --decode > debug.keystore
             else
               keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
