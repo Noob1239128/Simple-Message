@@ -229,6 +229,18 @@ fun GoogleAuthScreen(
     }
 }
 
+private fun resolveDefaultWebClientId(context: Context): String? {
+    val resId = context.resources.getIdentifier(
+        "default_web_client_id",
+        "string",
+        context.packageName
+    )
+    if (resId == 0) return null
+    return runCatching { context.getString(resId) }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+}
+
 fun attemptAutoSignIn(
     context: Context,
     credentialManager: CredentialManager,
@@ -236,13 +248,15 @@ fun attemptAutoSignIn(
     onUnauthenticated: () -> Unit,
     scope: CoroutineScope
 ) {
+    if (com.google.firebase.FirebaseApp.getApps(context).isEmpty()) {
+        onUnauthenticated()
+        return
+    }
     if (Firebase.auth.currentUser != null) {
         onAuthSuccess()
         return
     }
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (_: Exception) {
+    val clientId = resolveDefaultWebClientId(context) ?: run {
         onUnauthenticated()
         return
     }
@@ -279,10 +293,12 @@ fun onGoogleSignInClicked(
     scope: CoroutineScope,
     onAuthCancelled: () -> Unit = {}
 ) {
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (_: Exception) {
-        onAuthError("Google Sign-In Konfiguration fehlt (default_web_client_id).")
+    if (com.google.firebase.FirebaseApp.getApps(context).isEmpty()) {
+        onAuthError("Firebase-Konfiguration fehlt (google-services.json). Bitte GOOGLE_SERVICES_JSON_BASE64 in den GitHub-Secrets hinterlegen.")
+        return
+    }
+    val clientId = resolveDefaultWebClientId(context) ?: run {
+        onAuthError("Google Sign-In Konfiguration fehlt (default_web_client_id in google-services.json). Bitte GOOGLE_SERVICES_JSON_BASE64 in den GitHub-Secrets hinterlegen.")
         return
     }
     val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()

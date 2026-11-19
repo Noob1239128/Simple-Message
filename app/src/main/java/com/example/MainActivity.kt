@@ -59,8 +59,25 @@ internal fun FirebaseAuth.authStateFlow(): Flow<FirebaseUser?> = callbackFlow {
 }
 
 @Composable
-fun PulseChatRoot(auth: FirebaseAuth = Firebase.auth) {
-    val currentUser by auth.authStateFlow().collectAsStateWithLifecycle(initialValue = auth.currentUser)
+fun PulseChatRoot(auth: FirebaseAuth? = null) {
+    val context = LocalContext.current
+    val resolvedAuth = remember(auth, context) {
+        auth ?: if (com.google.firebase.FirebaseApp.getApps(context).isNotEmpty()) {
+            Firebase.auth
+        } else {
+            null
+        }
+    }
+
+    if (resolvedAuth == null) {
+        PulseChatTheme(darkTheme = true) {
+            GoogleAuthScreen(onAuthSuccess = {})
+        }
+        return
+    }
+
+    val currentUser by resolvedAuth.authStateFlow()
+        .collectAsStateWithLifecycle(initialValue = resolvedAuth.currentUser)
     val user = currentUser
 
     if (user == null) {

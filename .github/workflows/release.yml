@@ -60,10 +60,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
-            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > app/google-services.json
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '\r\n ' | base64 --decode > app/google-services.json
           fi
           if [ ! -f debug.keystore ]; then
-            keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            if [ -f debug.keystore.base64 ]; then
+              tr -d '\r\n ' < debug.keystore.base64 | base64 --decode > debug.keystore
+            else
+              keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            fi
           fi
 
       - name: Build APK
