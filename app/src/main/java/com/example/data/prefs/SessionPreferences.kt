@@ -15,7 +15,7 @@ class SessionPreferences(private val context: Context) {
     private val keyDarkTheme = booleanPreferencesKey("dark_theme")
 
     val githubRepoFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[keyGithubRepo] ?: ""
+        prefs[keyGithubRepo] ?: "Noob1239128/Simple-Message"
     }
 
     val darkThemeFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->

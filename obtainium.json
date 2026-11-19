@@ -1,7 +1,7 @@
 {
   "id": "com.aistudio.pulsechat.qmzvkt",
-  "url": "https://github.com/OWNER/PulseChat",
-  "author": "PulseChat",
+  "url": "https://github.com/Noob1239128/Simple-Message",
+  "author": "Noob1239128",
   "name": "PulseChat",
   "additionalSettings": "{\"includePrereleases\":false,\"fallbackToOlderReleases\":true,\"filterReleaseNotesByRegEx\":\"\",\"verifyLatestTag\":false,\"dontSortReleasesList\":false,\"useLatestAssetDateAsReleaseDate\":false,\"trackOnly\":false,\"versionExtractionRegEx\":\"\",\"versionDetection\":true,\"releaseDateAsVersion\":false,\"useVersionCodeAsOSVersion\":false,\"apkFilterRegEx\":\"PulseChat.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":true,\"appName\":\"PulseChat\"}"
 }

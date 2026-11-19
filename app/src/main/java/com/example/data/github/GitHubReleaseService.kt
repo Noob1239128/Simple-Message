@@ -1,7 +1,7 @@
 package com.example.data.github
 
+import androidx.annotation.Keep
 import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -13,14 +13,14 @@ import retrofit2.http.Path
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
-@JsonClass(generateAdapter = true)
+@Keep
 data class GitHubAsset(
     val name: String = "",
     val size: Long = 0L,
     @Json(name = "browser_download_url") val browserDownloadUrl: String = ""
 )
 
-@JsonClass(generateAdapter = true)
+@Keep
 data class GitHubRelease(
     @Json(name = "tag_name") val tagName: String = "",
     val name: String = "",
@@ -30,7 +30,7 @@ data class GitHubRelease(
     val assets: List<GitHubAsset> = emptyList()
 )
 
-@JsonClass(generateAdapter = true)
+@Keep
 data class ObtainiumAdditionalSettings(
     val includePrereleases: Boolean = false,
     val fallbackToOlderReleases: Boolean = true,
@@ -39,7 +39,7 @@ data class ObtainiumAdditionalSettings(
     val appName: String = "PulseChat"
 )
 
-@JsonClass(generateAdapter = true)
+@Keep
 data class ObtainiumAppConfig(
     val id: String = "com.aistudio.pulsechat.qmzvkt",
     val url: String,

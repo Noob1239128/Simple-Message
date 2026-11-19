@@ -55,10 +55,10 @@ jobs:
         run: |
           if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
             echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
-            gradle :app:assembleRelease --no-daemon
+            gradle :app:assembleRelease --no-parallel --no-configuration-cache
             APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           else
-            gradle :app:assembleDebug --no-daemon
+            gradle :app:assembleDebug --no-parallel --no-configuration-cache
             APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           fi
 
